@@ -1,0 +1,6 @@
+vp0:
+  image: hyperledger/fabric-peer
+  environment:
+    - CORE_PEER_ID=vp0
+    - CORE_PEER_ADDRESSAUTODETECT=true
+    - CORE_VM_END_POI
