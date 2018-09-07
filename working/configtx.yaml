@@ -1,0 +1,46 @@
+Organizations:
+ - &Orderer
+  Name: Orderer
+  ID: chain.neosis.com
+  AdminPrincipal: Role.ADMIN
+  MSPDir: crypto-config/ordererOrganizations/chain.neosis.com/msp
+ - &Org1
+  Name: Org1
+  ID: org1.chain.neosis.com
+  AdminPrincipal: Role.ADMIN
+  MSPDir: crypto-config/peerOrganizations/org1.chain.neosis.com/msp
+  AnchorPeers:
+   - Host: peer0.org1.chain.neosis.com
+     port: 7051
+#####################################
+Orderer: &OrdererDefaults
+ OrdererType: solo
+ Addresses:
+  - orderer.chain.neosis.com:7050
+ BatchTimeOut: 5s
+ BatchSize:
+  MaxMessageCount: 10
+  AbsoluteMaxBytes: 98 MB
+  PreferredMaxBytes: 512 KB
+ MaxChannels: 0
+ Organizations:
+######################################
+Application: &ApplicationDefaults
+ Organizations: 
+#####################################
+Profiles:
+ FirstProfile: 
+  Orderer:
+   << : *OrdererDefaults
+   Organizations:
+    - *Orderer
+  Application:
+   << : *ApplicationDefaults
+   Organizations:
+    - *Org1
+  Consortium: SampleConsortium
+  Consortiums:
+   SampleConsortium:
+    Organizations: 
+     - *Orderer
+     - *Org1

@@ -1,0 +1,137 @@
+version: '2'
+
+networks:
+  default:
+
+services:
+  orderer.chain.neosis.com:
+    image: hyperledger/fabric-orderer
+    container_name: orderer.chain.neosis.com
+    environment:
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - ORDERER_GENERAL_LISTENADDRESSES=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_GENESISPROFILE=FirstProfile
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=chain.neosis.com
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+      - ./artifacts/orderer.genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+      - ./crypto-config/ordererOrganizations/chain.neosis.com/orderers/orderer.chain.neosis.com/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/chain.neosis.com/orderers/orderer.chain.neosis.com/tls:/var/hyperledger/orderer/tls
+    ports:
+      - 7050:7050
+    networks:
+      default:
+        aliases:
+          - orderer.chain.neosis.com
+
+  ca.org1.chain.neosis.com:
+    image: hyperledger/fabric-ca
+    container_name: ca.org1.chain.neosis.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.org1.chain.neosis.com
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.chain.neosis.com-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/7d14eca5b510de1ecac5ecf3cefd7a1dafa4748810020b7d87aaf2cd54b9d462_sk
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.chain.neosis.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/7d14eca5b510de1ecac5ecf3cefd7a1dafa4748810020b7d87aaf2cd54b9d462_sk
+    ports:
+      - 7054:7054
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/org1.chain.neosis.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    networks:
+      default:
+        aliases:
+          - ca.org1.chain.neosis.com
+
+  peer0.org1.chain.neosis.com:
+    image: hyperledger/fabric-peer
+    container_name: peer0.org1.chain.neosis.com
+    environment:
+      - CORE_VM_ENDPOINT=unix://host/var/run/docker.sock
+      - CORE_VM_DOCKER_ATTACHSTDOUT=true
+      - CORE_LOGGING_LEVEL=debug
+      - CORE_PEER_NETWORKID=chainnw
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/var/hyperledger/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/var/hyperledger/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/var/hyperledger/tls/ca.crt
+      - CORE_PEER_ID=peer0.org1.chain.neosis.com
+      - CORE_PEER_ADDRESSAUTODETECT=true
+      - CORE_PEER_ADDRESS=peer0.org1.chain.neosis.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.chain.neosis.com
+      - CORE_PEER_GOSSIP_USELEADERELECTION=true
+      - CORE_PEER_GOSSIP_ORGLEADER=false
+      - CORE_PEER_GOSSIP_SKIPHANDSHAKE=true
+      - CORE_PEER_LOCALMSPID=org1.chain.neosis.com
+      - CORE_PEER_MSPCONFIGPATH=/var/hyperledger/msp
+      - CORE_PEER_TLS_SERVERHOSTOVERRIDE=peer0.org1.chain.neosis.com
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run:/host/var/run
+      - ./crypto-config/peerOrganizations/org1.chain.neosis.com/peers/peer0.org1.chain.neosis.com/msp:/var/hyperledger/msp
+      - ./crypto-config/peerOrganizations/org1.chain.neosis.com/peers/peer0.org1.chain.neosis.com/tls:/var/hyperledger/tls
+    ports:
+      - 7051:7051
+      - 7053:7053
+    depends_on:
+      - orderer.chain.neosis.com
+    links:
+      - orderer.chain.neosis.com
+    networks:
+      default:
+        aliases:
+          - peer0.org1.chain.neosis.com
+
+  peer1.org1.chain.neosis.com:
+    image: hyperledger/fabric-peer
+    container_name: peer1.org1.chain.neosis.com
+    environment:
+      - CORE_VM_ENDPOINT=unix://host/var/run/docker.sock
+      - CORE_VM_DOCKER_ATTACHSTDOUT=true
+      - CORE_LOGGING_LEVEL=debug
+      - CORE_PEER_NETWORKID=chainnw
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/var/hyperledger/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/var/hyperledger/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/var/hyperledger/tls/ca.crt
+      - CORE_PEER_ID=peer0.org1.chain.neosis.com
+      - CORE_PEER_ADDRESSAUTODETECT=true
+      - CORE_PEER_ADDRESS=peer1.org1.chain.neosis.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.chain.neosis.com
+      - CORE_PEER_GOSSIP_USELEADERELECTION=true
+      - CORE_PEER_GOSSIP_ORGLEADER=false
+      - CORE_PEER_GOSSIP_SKIPHANDSHAKE=true
+      - CORE_PEER_LOCALMSPID=org1.chain.neosis.com
+      - CORE_PEER_MSPCONFIGPATH=/var/hyperledger/msp
+      - CORE_PEER_TLS_SERVERHOSTOVERRIDE=peer1.org1.chain.neosis.com
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/org1.chain.neosis.com/peers/peer1.org1.chain.neosis.com/msp:/var/hyperledger/msp
+      - ./crypto-config/peerOrganizations/org1.chain.neosis.com/peers/peer1.org1.chain.neosis.com/tls:/var/hyperledger/tls
+    ports:
+      - 8051:7051
+      - 8053:7053
+    depends_on:
+      - orderer.chain.neosis.com
+    links:
+      - orderer.chain.neosis.com
+    networks:
+      default:
+        aliases:
+          - peer1.org1.chain.neosis.com
